@@ -35,9 +35,19 @@
 
                 <div class="d-flex align-items-center gap-2 mt-3 mt-lg-0">
                     @include('partials.theme-toggle')
-                    <a href="{{ route('login') }}" class="btn btn-outline-primary btn-sm">
-                        <i class="bi bi-box-arrow-in-right me-1"></i> Se connecter
-                    </a>
+
+                    @guest
+                        <a href="{{ route('login') }}" class="btn btn-outline-primary btn-sm">
+                            <i class="bi bi-box-arrow-in-right me-1"></i> Se connecter
+                        </a>
+                    @endguest
+
+                    @auth
+                        <a href="{{ route('dashboard') }}" class="btn btn-outline-primary btn-sm">
+                            <i class="bi bi-grid me-1"></i> Mon espace
+                        </a>
+                    @endauth
+
                     <a href="{{ route('report') }}" class="btn btn-primary btn-sm">
                         <i class="bi bi-exclamation-triangle-fill me-1"></i> Signaler
                     </a>
@@ -86,7 +96,14 @@
                     <li><a class="dropdown-item" href="{{ route('dashboard') }}"><i class="bi bi-grid me-2"></i> Dashboard</a></li>
                     <li><a class="dropdown-item" href="{{ route('history') }}"><i class="bi bi-clock-history me-2"></i> Historique</a></li>
                     <li><hr class="dropdown-divider"></li>
-                    <li><a class="dropdown-item" href="{{ route('home') }}"><i class="bi bi-box-arrow-right me-2"></i> Déconnexion</a></li>
+                    <li>
+                        <form action="{{ route('logout') }}" method="POST">
+                            @csrf
+                            <button type="submit" class="dropdown-item">
+                                <i class="bi bi-box-arrow-right me-2"></i> Déconnexion
+                            </button>
+                        </form>
+                    </li>
                 </ul>
             </div>
         </div>

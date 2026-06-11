@@ -1,6 +1,5 @@
 /**
  * Smart Emergency AI — MVP Citoyen
- * Thème dark/light, sidebar, filtres, formulaires
  */
 
 document.addEventListener('DOMContentLoaded', function () {
@@ -95,10 +94,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
 
     /* ======================================================================
-       FORMULAIRE SIGNALEMENT
+       APERÇU PHOTO / VIDÉO
        ====================================================================== */
-    var reportForm = document.getElementById('reportForm');
-    var reportModal = document.getElementById('reportModal');
     var reportPhoto = document.getElementById('reportPhoto');
     var photoPreview = document.getElementById('photoPreview');
 
@@ -127,39 +124,108 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    if (reportForm && reportModal) {
-        var modal = new bootstrap.Modal(reportModal);
-        reportForm.addEventListener('submit', function (e) {
-            e.preventDefault();
-            modal.show();
-        });
-    }
-
 
     /* ======================================================================
-       FORMULAIRES AUTH (redirection simulée)
+       GÉOLOCALISATION
        ====================================================================== */
-    var loginForm = document.getElementById('loginForm');
-    var registerForm = document.getElementById('registerForm');
+    var geoBtn = document.getElementById('geoBtn');
+    var geoCard = document.getElementById('geoCard');
+    var geoStatus = document.getElementById('geoStatus');
+    var latInput = document.getElementById('latitude');
+    var lngInput = document.getElementById('longitude');
+    var localisationInput = document.getElementById('localisation');
+    var geoCoords = document.getElementById('geoCoords');
+    var geoMap = document.getElementById('geoMap');
 
-    if (loginForm) {
-        loginForm.addEventListener('submit', function (e) {
-            e.preventDefault();
-            window.location.href = loginForm.getAttribute('action') || '/dashboard';
-        });
+    function setGeoStatus(message, type) {
+        if (!geoStatus) return;
+        geoStatus.className = 'geo-status small ' + (type === 'ok' ? 'geo-ok' : 'text-muted');
+        geoStatus.innerHTML = message;
     }
 
-    if (registerForm) {
-        registerForm.addEventListener('submit', function (e) {
-            e.preventDefault();
-            var pwd = document.getElementById('password');
-            var confirm = document.getElementById('passwordConfirm');
-            if (pwd && confirm && pwd.value !== confirm.value) {
-                alert('Les mots de passe ne correspondent pas.');
+    function showMap(lat, lng) {
+        if (!geoMap) return;
+        geoMap.classList.remove('d-none');
+        geoMap.innerHTML = '<iframe src="https://maps.google.com/maps?q=' + lat + ',' + lng + '&z=16&output=embed" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>';
+    }
+
+    function resolveAddress(lat, lng) {
+        var url = '/geolocalisation/adresse?latitude=' + encodeURIComponent(lat) + '&longitude=' + encodeURIComponent(lng);
+
+        return fetch(url, {
+            headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+        })
+            .then(function (res) { return res.json(); })
+            .then(function (data) {
+                if (localisationInput && data.address) {
+                    localisationInput.value = data.address;
+                }
+            })
+            .catch(function () {
+                if (localisationInput) {
+                    localisationInput.value = 'Position GPS (' + lat.toFixed(5) + ', ' + lng.toFixed(5) + ')';
+                }
+            });
+    }
+
+    function applyPosition(lat, lng) {
+        if (latInput) latInput.value = lat;
+        if (lngInput) lngInput.value = lng;
+
+        if (geoCoords) {
+            geoCoords.textContent = 'Coordonnées : ' + lat.toFixed(5) + ', ' + lng.toFixed(5);
+            geoCoords.classList.remove('d-none');
+        }
+
+        if (geoCard) {
+            geoCard.classList.remove('geo-error');
+            geoCard.classList.add('geo-success');
+        }
+
+        setGeoStatus('<i class="bi bi-check-circle-fill me-1"></i> Position obtenue avec succès', 'ok');
+        showMap(lat, lng);
+        return resolveAddress(lat, lng);
+    }
+
+    if (geoBtn) {
+        geoBtn.addEventListener('click', function () {
+            if (!navigator.geolocation) {
+                setGeoStatus('<i class="bi bi-x-circle me-1"></i> Géolocalisation non supportée par votre navigateur', 'error');
+                if (geoCard) geoCard.classList.add('geo-error');
                 return;
             }
-            window.location.href = registerForm.getAttribute('action') || '/dashboard';
+
+            setGeoStatus('<i class="bi bi-hourglass-split me-1"></i> Recherche de votre position...', 'loading');
+            geoBtn.disabled = true;
+
+            navigator.geolocation.getCurrentPosition(
+                function (position) {
+                    applyPosition(position.coords.latitude, position.coords.longitude)
+                        .finally(function () { geoBtn.disabled = false; });
+                },
+                function (error) {
+                    geoBtn.disabled = false;
+                    if (geoCard) geoCard.classList.add('geo-error');
+
+                    var msg = 'Impossible d\'obtenir votre position.';
+                    if (error.code === 1) msg = 'Autorisez l\'accès à votre position dans le navigateur.';
+                    if (error.code === 2) msg = 'Position indisponible. Réessayez.';
+                    if (error.code === 3) msg = 'Délai dépassé. Réessayez.';
+
+                    setGeoStatus('<i class="bi bi-x-circle me-1"></i> ' + msg, 'error');
+                },
+                { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+            );
         });
+
+        // Restaurer la position après erreur de validation
+        if (latInput && lngInput && latInput.value && lngInput.value) {
+            var lat = parseFloat(latInput.value);
+            var lng = parseFloat(lngInput.value);
+            if (!isNaN(lat) && !isNaN(lng)) {
+                applyPosition(lat, lng);
+            }
+        }
     }
 
 });

@@ -36,17 +36,42 @@
 
                 <div class="detail-section mb-4">
                     <h6 class="fw-semibold text-muted text-uppercase small mb-2">Localisation</h6>
-                    <p class="mb-0">
+                    <p class="mb-2">
                         <i class="bi bi-geo-alt-fill text-primary me-2"></i>
                         {{ $signalement['localisation'] }}
                     </p>
+                    @if(!empty($signalement['latitude']) && !empty($signalement['longitude']))
+                        <p class="text-muted small mb-2">
+                            GPS : {{ number_format($signalement['latitude'], 5) }}, {{ number_format($signalement['longitude'], 5) }}
+                        </p>
+                        <a href="{{ $signalement['maps_url'] }}" target="_blank" rel="noopener"
+                           class="btn btn-sm btn-outline-primary mb-3">
+                            <i class="bi bi-map me-1"></i> Ouvrir dans Google Maps
+                        </a>
+                        <div class="geo-map-detail rounded-3 overflow-hidden">
+                            <iframe
+                                title="Carte de localisation"
+                                src="https://maps.google.com/maps?q={{ $signalement['latitude'] }},{{ $signalement['longitude'] }}&z=16&output=embed"
+                                loading="lazy"
+                                referrerpolicy="no-referrer-when-downgrade"></iframe>
+                        </div>
+                    @endif
                 </div>
 
-                <div class="detail-section">
-                    <h6 class="fw-semibold text-muted text-uppercase small mb-2">Photo</h6>
-                    <img src="{{ $signalement['photo'] }}" alt="Photo du signalement"
-                        class="detail-photo rounded-3 w-100">
-                </div>
+                @if(!empty($signalement['photo']))
+                    <div class="detail-section mb-4">
+                        <h6 class="fw-semibold text-muted text-uppercase small mb-2">Photo</h6>
+                        <img src="{{ $signalement['photo'] }}" alt="Photo du signalement"
+                             class="detail-photo rounded-3 w-100">
+                    </div>
+                @endif
+
+                @if(!empty($signalement['video']))
+                    <div class="detail-section">
+                        <h6 class="fw-semibold text-muted text-uppercase small mb-2">Vidéo</h6>
+                        <video src="{{ $signalement['video'] }}" controls class="w-100 rounded-3"></video>
+                    </div>
+                @endif
             </div>
         </div>
 

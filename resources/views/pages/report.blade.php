@@ -9,62 +9,100 @@
     <div class="row justify-content-center">
         <div class="col-lg-8">
             <div class="sea-card p-4">
-                <form id="reportForm">
+                <form method="POST" action="{{ route('signalement.store') }}" enctype="multipart/form-data" id="reportForm">
+                    @csrf
+
                     <div class="row g-3">
-                        {{-- Nom --}}
                         <div class="col-md-6">
                             <label for="reportName" class="form-label fw-medium">Nom</label>
-                            <input type="text" class="form-control" id="reportName"
-                                value="{{ $user['name'] }}" required>
+                            <input type="text" class="form-control @error('name') is-invalid @enderror"
+                                   id="reportName" name="name"
+                                   value="{{ old('name', $user['name']) }}" required>
+                            @error('name')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
                         </div>
 
-                        {{-- Téléphone --}}
                         <div class="col-md-6">
                             <label for="reportPhone" class="form-label fw-medium">Téléphone</label>
-                            <input type="tel" class="form-control" id="reportPhone"
-                                value="{{ $user['phone'] }}" required>
+                            <input type="tel" class="form-control @error('phone') is-invalid @enderror"
+                                   id="reportPhone" name="phone"
+                                   value="{{ old('phone', $user['phone']) }}" required>
+                            @error('phone')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
                         </div>
 
-                        {{-- Catégorie --}}
                         <div class="col-12">
                             <label for="reportCategory" class="form-label fw-medium">Catégorie</label>
-                            <select class="form-select" id="reportCategory" required>
-                                <option value="" disabled selected>Choisir une catégorie...</option>
+                            <select class="form-select @error('category') is-invalid @enderror"
+                                    id="reportCategory" name="category" required>
+                                <option value="" disabled {{ old('category') ? '' : 'selected' }}>Choisir une catégorie...</option>
                                 @foreach($categories as $cat)
-                                    <option value="{{ $cat }}">{{ $cat }}</option>
+                                    <option value="{{ $cat }}" {{ old('category') === $cat ? 'selected' : '' }}>{{ $cat }}</option>
                                 @endforeach
                             </select>
+                            @error('category')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
                         </div>
 
-                        {{-- Description --}}
+                        {{-- Géolocalisation --}}
+                        <div class="col-12">
+                            <label class="form-label fw-medium">
+                                <i class="bi bi-geo-alt-fill text-primary me-1"></i> Localisation GPS
+                            </label>
+                            <div class="geo-card" id="geoCard">
+                                <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+                                    <div id="geoStatus" class="geo-status text-muted small">
+                                        <i class="bi bi-info-circle me-1"></i>
+                                        Cliquez pour obtenir votre position exacte
+                                    </div>
+                                    <button type="button" class="btn btn-outline-primary btn-sm" id="geoBtn">
+                                        <i class="bi bi-crosshair me-1"></i> Obtenir ma position
+                                    </button>
+                                </div>
+                                <input type="hidden" name="latitude" id="latitude" value="{{ old('latitude') }}">
+                                <input type="hidden" name="longitude" id="longitude" value="{{ old('longitude') }}">
+                                <input type="text" class="form-control @error('localisation') is-invalid @enderror"
+                                       id="localisation" name="localisation"
+                                       placeholder="Adresse détectée automatiquement..."
+                                       value="{{ old('localisation') }}" readonly>
+                                <div id="geoCoords" class="text-muted small mt-2 d-none"></div>
+                                <div id="geoMap" class="geo-map mt-3 d-none"></div>
+                                @error('latitude')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
+                                @error('longitude')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
+                            </div>
+                        </div>
+
                         <div class="col-12">
                             <label for="reportDescription" class="form-label fw-medium">Description</label>
-                            <textarea class="form-control" id="reportDescription" rows="4"
-                                    placeholder="Décrivez la situation..." required></textarea>
+                            <textarea class="form-control @error('description') is-invalid @enderror"
+                                      id="reportDescription" name="description" rows="4"
+                                      placeholder="Décrivez la situation..." required>{{ old('description') }}</textarea>
+                            @error('description')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
                         </div>
 
-                        {{-- Upload Photo / Vidéo --}}
                         <div class="col-md-6">
                             <label class="form-label fw-medium">Photo</label>
                             <div class="upload-zone" id="photoUploadZone">
-                                <input type="file" class="d-none" id="reportPhoto" accept="image/*">
+                                <input type="file" class="d-none @error('photo') is-invalid @enderror"
+                                       id="reportPhoto" name="photo" accept="image/*">
                                 <label for="reportPhoto" class="upload-label mb-0">
                                     <i class="bi bi-camera-fill fs-3 text-primary"></i>
                                     <span class="small text-muted">Cliquez pour ajouter une photo</span>
                                 </label>
                                 <div class="upload-preview d-none" id="photoPreview"></div>
                             </div>
+                            @error('photo')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
                         </div>
+
                         <div class="col-md-6">
                             <label class="form-label fw-medium">Vidéo</label>
                             <div class="upload-zone" id="videoUploadZone">
-                                <input type="file" class="d-none" id="reportVideo" accept="video/*">
+                                <input type="file" class="d-none @error('video') is-invalid @enderror"
+                                       id="reportVideo" name="video" accept="video/*">
                                 <label for="reportVideo" class="upload-label mb-0">
                                     <i class="bi bi-camera-video-fill fs-3 text-primary"></i>
                                     <span class="small text-muted">Cliquez pour ajouter une vidéo</span>
                                 </label>
                                 <div class="upload-preview d-none" id="videoPreview"></div>
                             </div>
+                            @error('video')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
                         </div>
                     </div>
 
@@ -72,28 +110,6 @@
                         <i class="bi bi-send-fill me-2"></i> Signaler l'urgence
                     </button>
                 </form>
-            </div>
-        </div>
-    </div>
-
-    {{-- Modal confirmation signalement --}}
-    <div class="modal fade" id="reportModal" tabindex="-1">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content sea-card border-0">
-                <div class="modal-body text-center p-5">
-                    <div class="success-icon mb-4">
-                        <i class="bi bi-check-lg"></i>
-                    </div>
-                    <h4 class="fw-bold mb-2">Signalement envoyé !</h4>
-                    <p class="text-muted mb-4">
-                        Votre urgence a été transmise aux services compétents.
-                        Vous pouvez suivre son évolution dans votre historique.
-                    </p>
-                    <div class="d-flex gap-2 justify-content-center">
-                        <a href="{{ route('history') }}" class="btn btn-primary">Voir l'historique</a>
-                        <button type="button" class="btn btn-outline-primary" data-bs-dismiss="modal">Fermer</button>
-                    </div>
-                </div>
             </div>
         </div>
     </div>

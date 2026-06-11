@@ -70,7 +70,7 @@
                             <div class="hero-stat-icon">
                                 <i class="bi bi-heart-pulse-fill"></i>
                             </div>
-                            <div class="hero-stat-number">120</div>
+                            <div class="hero-stat-number">{{ $platformStats['urgences_traitees'] ?? '120' }}</div>
                             <div class="hero-stat-label">Urgences traitées</div>
                         </div>
                         <div class="row g-3 mt-1">
@@ -78,7 +78,7 @@
                                 <div class="hero-stat-sub">
                                     <i class="bi bi-patch-check-fill text-success"></i>
                                     <div>
-                                        <strong>95%</strong>
+                                        <strong>{{ $platformStats['taux_succes'] ?? '95%' }}</strong>
                                         <small>Taux de succès</small>
                                     </div>
                                 </div>
@@ -87,7 +87,7 @@
                                 <div class="hero-stat-sub">
                                     <i class="bi bi-stopwatch-fill text-primary"></i>
                                     <div>
-                                        <strong>12 min</strong>
+                                        <strong>{{ $platformStats['temps_moyen'] ?? '12 min' }}</strong>
                                         <small>Temps moyen</small>
                                     </div>
                                 </div>

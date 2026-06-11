@@ -33,6 +33,7 @@
             <div class="app-main">
                 @include('partials.navbar', ['variant' => 'app'])
                 <main class="app-content">
+                    @include('partials.alerts')
                     @yield('content')
                 </main>
             </div>
@@ -43,7 +44,10 @@
         <div class="auth-wrapper">
             @include('partials.navbar', ['variant' => 'auth'])
             <main class="auth-content">
-                @yield('content')
+                <div class="w-100" style="max-width:560px;">
+                    @include('partials.alerts')
+                    @yield('content')
+                </div>
             </main>
         </div>
 
@@ -51,6 +55,9 @@
         {{-- Layout page d'accueil --}}
         @include('partials.navbar', ['variant' => 'guest'])
         <main>
+            <div class="container pt-3">
+                @include('partials.alerts')
+            </div>
             @yield('content')
         </main>
         @include('partials.footer')

@@ -13,20 +13,28 @@
             <p class="text-muted">Accédez à votre espace citoyen</p>
         </div>
 
-        <form id="loginForm" action="{{ route('dashboard') }}">
+        <form method="POST" action="{{ route('login') }}">
+            @csrf
+
             <div class="mb-3">
                 <label for="email" class="form-label fw-medium">Email</label>
                 <div class="input-group">
                     <span class="input-group-text"><i class="bi bi-envelope"></i></span>
-                    <input type="email" class="form-control" id="email" placeholder="votre@email.ne" value="ben.said@email.ne" required>
+                    <input type="email" class="form-control @error('email') is-invalid @enderror"
+                           id="email" name="email" placeholder="votre@email.ne"
+                           value="{{ old('email', 'ben.said@email.ne') }}" required autofocus>
                 </div>
+                @error('email')
+                    <div class="text-danger small mt-1">{{ $message }}</div>
+                @enderror
             </div>
 
             <div class="mb-4">
                 <label for="password" class="form-label fw-medium">Mot de passe</label>
                 <div class="input-group">
                     <span class="input-group-text"><i class="bi bi-lock"></i></span>
-                    <input type="password" class="form-control" id="password"  value="password" required>
+                    <input type="password" class="form-control @error('password') is-invalid @enderror"
+                           id="password" name="password" required>
                 </div>
             </div>
 
