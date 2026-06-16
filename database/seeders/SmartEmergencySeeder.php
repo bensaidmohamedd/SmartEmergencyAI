@@ -3,9 +3,12 @@
 namespace Database\Seeders;
 
 use App\Models\Category;
+use App\Models\EmergencyService;
 use App\Models\PlatformStat;
 use App\Models\Signalement;
 use App\Models\User;
+use App\Services\EmergencyAnalysisService;
+use App\Services\PlatformStatsCalculator;
 use Carbon\Carbon;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
@@ -20,6 +23,17 @@ class SmartEmergencySeeder extends Seeder
                 'name' => 'Ben Saïd',
                 'phone' => '+227 87 14 51 44',
                 'password' => Hash::make('password'),
+                'role' => User::ROLE_CITOYEN,
+            ]
+        );
+
+        User::updateOrCreate(
+            ['email' => 'admin@smartemergency.ne'],
+            [
+                'name' => 'Administrateur',
+                'phone' => '+227 90 00 00 00',
+                'password' => Hash::make('password'),
+                'role' => User::ROLE_ADMIN,
             ]
         );
 
@@ -31,6 +45,7 @@ class SmartEmergencySeeder extends Seeder
         }
 
         $categoryMap = Category::pluck('id', 'name');
+        $pompiersPlateau = EmergencyService::where('name', 'Caserne Pompiers Plateau')->first();
 
         $signalementsData = [
             [
@@ -43,6 +58,15 @@ class SmartEmergencySeeder extends Seeder
                 'reported_at' => '2026-06-10 14:32:00',
                 'gravite' => 'critique',
                 'statut' => 'en_cours',
+                'ai_score' => 95,
+                'ai_credibility_score' => 88,
+                'ai_verdict' => EmergencyAnalysisService::VERDICT_APPROVED,
+                'ai_priority_rank' => 84,
+                'ai_summary' => 'Incendie critique — personnes bloquées, fumée dense.',
+                'ai_services' => ['Sapeurs-pompiers (18)', 'Police nationale (17)', 'SAMU / Ambulance (15)'],
+                'estimated_response_min' => 6,
+                'fire_people_trapped' => true,
+                'fire_smoke_level' => 'dense',
                 'photo' => 'https://images.unsplash.com/photo-1547056979-94710663f979?w=600&h=400&fit=crop',
                 'timeline' => [
                     ['label' => 'Signalement reçu', 'done' => true, 'time' => '2026-06-10 14:32:00'],
@@ -59,6 +83,14 @@ class SmartEmergencySeeder extends Seeder
                 'reported_at' => '2026-06-09 09:15:00',
                 'gravite' => 'elevee',
                 'statut' => 'en_cours',
+                'latitude' => 13.5180,
+                'longitude' => 2.1250,
+                'ai_score' => 72,
+                'ai_credibility_score' => 78,
+                'ai_verdict' => EmergencyAnalysisService::VERDICT_APPROVED,
+                'ai_priority_rank' => 56,
+                'ai_summary' => 'Accident routier avec blessés légers.',
+                'estimated_response_min' => 10,
                 'photo' => 'https://images.unsplash.com/photo-1449965408869-eaa3f722e40d?w=600&h=400&fit=crop',
                 'timeline' => [
                     ['label' => 'Signalement reçu', 'done' => true, 'time' => '2026-06-09 09:15:00'],
@@ -75,6 +107,13 @@ class SmartEmergencySeeder extends Seeder
                 'reported_at' => '2026-06-08 18:45:00',
                 'gravite' => 'critique',
                 'statut' => 'termine',
+                'latitude' => 13.5200,
+                'longitude' => 2.1300,
+                'ai_score' => 88,
+                'ai_credibility_score' => 82,
+                'ai_verdict' => EmergencyAnalysisService::VERDICT_APPROVED,
+                'ai_priority_rank' => 72,
+                'estimated_response_min' => 5,
                 'photo' => 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=600&h=400&fit=crop',
                 'timeline' => [
                     ['label' => 'Signalement reçu', 'done' => true, 'time' => '2026-06-08 18:45:00'],
@@ -131,6 +170,30 @@ class SmartEmergencySeeder extends Seeder
                     ['label' => 'Intervention clôturée', 'done' => true, 'time' => '2026-06-05 18:30:00'],
                 ],
             ],
+            [
+                'reference' => 'SIG-007',
+                'category' => 'Agression',
+                'description' => 'Bagarre signalée près du marché, situation tendue mais peu de détails confirmés.',
+                'localisation' => 'Grand Marché, Niamey',
+                'latitude' => 13.5155,
+                'longitude' => 2.1180,
+                'reported_at' => '2026-06-14 20:10:00',
+                'gravite' => 'moyenne',
+                'statut' => 'en_cours',
+                'ai_score' => 48,
+                'ai_credibility_score' => 52,
+                'ai_verdict' => EmergencyAnalysisService::VERDICT_REVIEW,
+                'ai_rejection_reasons' => ['description trop courte', 'description vague'],
+                'ai_priority_rank' => 25,
+                'ai_summary' => 'Signalement suspect — vérification requise.',
+                'estimated_response_min' => 18,
+                'timeline' => [
+                    ['label' => 'Signalement reçu', 'done' => true, 'time' => '2026-06-14 20:10:00'],
+                    ['label' => 'Analyse IA — crédibilité 52/100', 'done' => true, 'time' => '2026-06-14 20:10:30'],
+                    ['label' => 'Validation IA : Signalement suspect — vérification requise', 'done' => true, 'time' => '2026-06-14 20:11:00'],
+                    ['label' => 'En attente de validation manuelle', 'done' => false, 'time' => null],
+                ],
+            ],
         ];
 
         foreach ($signalementsData as $index => $data) {
@@ -149,7 +212,19 @@ class SmartEmergencySeeder extends Seeder
                     'longitude' => $data['longitude'] ?? null,
                     'gravite' => $data['gravite'],
                     'statut' => $data['statut'],
-                    'photo' => $data['photo'],
+                    'ai_score' => $data['ai_score'] ?? null,
+                    'ai_credibility_score' => $data['ai_credibility_score'] ?? null,
+                    'ai_verdict' => $data['ai_verdict'] ?? EmergencyAnalysisService::VERDICT_APPROVED,
+                    'ai_rejection_reasons' => $data['ai_rejection_reasons'] ?? null,
+                    'ai_priority_rank' => $data['ai_priority_rank'] ?? null,
+                    'ai_summary' => $data['ai_summary'] ?? null,
+                    'ai_services' => $data['ai_services'] ?? null,
+                    'estimated_response_min' => $data['estimated_response_min'] ?? null,
+                    'fire_people_trapped' => $data['fire_people_trapped'] ?? null,
+                    'fire_smoke_level' => $data['fire_smoke_level'] ?? null,
+                    'assigned_service_id' => ($data['reference'] === 'SIG-001' && $pompiersPlateau)
+                        ? $pompiersPlateau->id : null,
+                    'photo' => $data['photo'] ?? null,
                     'reported_at' => Carbon::parse($data['reported_at']),
                 ]
             );
@@ -175,5 +250,7 @@ class SmartEmergencySeeder extends Seeder
         foreach ($platformStats as $stat) {
             PlatformStat::updateOrCreate(['key' => $stat['key']], $stat);
         }
+
+        PlatformStatsCalculator::sync();
     }
 }

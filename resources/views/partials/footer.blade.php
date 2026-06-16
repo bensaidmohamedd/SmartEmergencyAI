@@ -77,8 +77,8 @@
                     {{ date('Y') }} Smart Emergency AI Niger. Tous droits réservés.
                 </small>
                 <div class="footer-legal">
-                    <a href="#">Mentions légales</a>
-                    <a href="#">Confidentialité</a>
+                    <a href="{{ route('legal.terms') }}">Mentions légales</a>
+                    <a href="{{ route('legal.privacy') }}">Confidentialité</a>
                 </div>
             </div>
         </div>

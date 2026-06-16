@@ -11,7 +11,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Notifications\Notifiable;
 
-#[Fillable(['name', 'email', 'phone', 'password'])]
+#[Fillable(['name', 'email', 'phone', 'password', 'role'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {
@@ -31,9 +31,23 @@ class User extends Authenticatable
         ];
     }
 
+    public const ROLE_CITOYEN = 'citoyen';
+
+    public const ROLE_ADMIN = 'admin';
+
     public function signalements(): HasMany
     {
         return $this->hasMany(Signalement::class);
+    }
+
+    public function isAdmin(): bool
+    {
+        return $this->role === self::ROLE_ADMIN;
+    }
+
+    public function isCitoyen(): bool
+    {
+        return $this->role === self::ROLE_CITOYEN;
     }
 
     /** Format attendu par les vues Blade */

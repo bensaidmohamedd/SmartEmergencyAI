@@ -39,6 +39,20 @@
             </div>
         </div>
 
+    @elseif($layoutType === 'admin')
+        {{-- Layout administration --}}
+        <div class="app-wrapper admin-wrapper">
+            <div class="sidebar-overlay" id="sidebarOverlay"></div>
+            @include('partials.admin-sidebar')
+            <div class="app-main">
+                @include('partials.navbar', ['variant' => 'admin'])
+                <main class="app-content">
+                    @include('partials.alerts')
+                    @yield('content')
+                </main>
+            </div>
+        </div>
+
     @elseif($layoutType === 'auth')
         {{-- Layout authentification : centré --}}
         <div class="auth-wrapper">
@@ -53,6 +67,7 @@
 
     @else
         {{-- Layout page d'accueil --}}
+        @include('partials.emergency-hotline')
         @include('partials.navbar', ['variant' => 'guest'])
         <main>
             <div class="container pt-3">

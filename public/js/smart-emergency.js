@@ -184,7 +184,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
         setGeoStatus('<i class="bi bi-check-circle-fill me-1"></i> Position obtenue avec succès', 'ok');
         showMap(lat, lng);
-        return resolveAddress(lat, lng);
+        return resolveAddress(lat, lng).then(function () {
+            if (typeof window.triggerAiAnalysis === 'function') window.triggerAiAnalysis();
+        });
     }
 
     if (geoBtn) {
@@ -227,5 +229,151 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         }
     }
+
+    /* ======================================================================
+       FORMULAIRE INCENDIE + ANALYSE IA
+       ====================================================================== */
+    var reportCategory = document.getElementById('reportCategory');
+    var fireFields = document.getElementById('fireFields');
+    var reportDescription = document.getElementById('reportDescription');
+    var aiPanel = document.getElementById('aiPreviewPanel');
+    var aiPreviewCard = document.getElementById('aiPreviewCard');
+    var reportSubmitBtn = document.getElementById('reportSubmitBtn');
+    var analyzeTimer = null;
+
+    function toggleFireFields() {
+        if (!fireFields || !reportCategory) return;
+        fireFields.classList.toggle('d-none', reportCategory.value !== 'Incendie');
+    }
+
+    if (reportCategory) {
+        reportCategory.addEventListener('change', function () {
+            toggleFireFields();
+            triggerAnalysis();
+        });
+        toggleFireFields();
+    }
+
+    function applyVerdictUi(data) {
+        var banner = document.getElementById('aiVerdictBanner');
+        var title = document.getElementById('aiVerdictTitle');
+        var list = document.getElementById('aiRejectionList');
+        var badge = document.getElementById('aiVerdictBadge');
+        var pulse = document.getElementById('aiPulseDot');
+
+        if (!banner || !title) return;
+
+        banner.classList.remove('d-none', 'ai-verdict-approved', 'ai-verdict-review', 'ai-verdict-rejected');
+        if (aiPreviewCard) {
+            aiPreviewCard.classList.remove('ai-card-approved', 'ai-card-review', 'ai-card-rejected');
+        }
+
+        if (data.verdict === 'rejected') {
+            banner.classList.add('ai-verdict-rejected');
+            if (aiPreviewCard) aiPreviewCard.classList.add('ai-card-rejected');
+            title.innerHTML = '<i class="bi bi-x-octagon-fill me-1"></i> Signalement rejeté — fausse urgence détectée';
+            if (list) {
+                list.classList.remove('d-none');
+                list.innerHTML = '';
+                (data.rejection_reasons || []).forEach(function (r) {
+                    var li = document.createElement('li');
+                    li.textContent = r;
+                    list.appendChild(li);
+                });
+            }
+            if (badge) { badge.textContent = 'REJETÉ'; badge.className = 'badge bg-danger ms-1'; badge.classList.remove('d-none'); }
+            if (pulse) pulse.style.background = '#e74c3c';
+            if (reportSubmitBtn) { reportSubmitBtn.disabled = true; reportSubmitBtn.innerHTML = '<i class="bi bi-shield-x me-2"></i> Signalement bloqué par l\'IA'; }
+        } else if (data.verdict === 'review') {
+            banner.classList.add('ai-verdict-review');
+            if (aiPreviewCard) aiPreviewCard.classList.add('ai-card-review');
+            title.innerHTML = '<i class="bi bi-exclamation-triangle-fill me-1"></i> Signalement suspect — vérification humaine requise';
+            if (list) list.classList.add('d-none');
+            if (badge) { badge.textContent = 'À VÉRIFIER'; badge.className = 'badge bg-warning text-dark ms-1'; badge.classList.remove('d-none'); }
+            if (pulse) pulse.style.background = '#f39c12';
+            if (reportSubmitBtn) { reportSubmitBtn.disabled = false; reportSubmitBtn.innerHTML = '<i class="bi bi-send-fill me-2"></i> Signaler (sous vérification)'; }
+        } else {
+            banner.classList.add('ai-verdict-approved');
+            if (aiPreviewCard) aiPreviewCard.classList.add('ai-card-approved');
+            title.innerHTML = '<i class="bi bi-check-circle-fill me-1"></i> Signalement validé par l\'IA';
+            if (list) list.classList.add('d-none');
+            if (badge) { badge.textContent = 'VALIDÉ'; badge.className = 'badge bg-success ms-1'; badge.classList.remove('d-none'); }
+            if (pulse) pulse.style.background = '#27ae60';
+            if (reportSubmitBtn) { reportSubmitBtn.disabled = false; reportSubmitBtn.innerHTML = '<i class="bi bi-send-fill me-2"></i> Signaler l\'urgence'; }
+        }
+    }
+
+    function triggerAnalysis() {
+        if (!reportDescription || !window.SEA_ANALYZE_URL) return;
+        var desc = reportDescription.value.trim();
+        var cat = reportCategory ? reportCategory.value : '';
+        if (desc.length < 10 || !cat) {
+            if (aiPanel) aiPanel.classList.add('d-none');
+            if (reportSubmitBtn) {
+                reportSubmitBtn.disabled = false;
+                reportSubmitBtn.innerHTML = '<i class="bi bi-send-fill me-2"></i> Signaler l\'urgence';
+            }
+            return;
+        }
+        clearTimeout(analyzeTimer);
+        analyzeTimer = setTimeout(function () {
+            var hasMedia = (reportPhoto && reportPhoto.files && reportPhoto.files.length > 0)
+                || (reportVideo && reportVideo.files && reportVideo.files.length > 0);
+            var body = {
+                category: cat,
+                description: desc,
+                latitude: latInput && latInput.value ? parseFloat(latInput.value) : null,
+                longitude: lngInput && lngInput.value ? parseFloat(lngInput.value) : null,
+                has_media: hasMedia,
+                fire_people_trapped: document.getElementById('firePeopleTrapped')?.value === '1',
+                fire_smoke_level: document.getElementById('fireSmokeLevel')?.value || null,
+                fire_building_type: document.getElementById('fireBuildingType')?.value || null,
+            };
+            fetch(window.SEA_ANALYZE_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': window.SEA_CSRF, 'Accept': 'application/json' },
+                body: JSON.stringify(body),
+            })
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                if (!aiPanel) return;
+                aiPanel.classList.remove('d-none');
+                document.getElementById('aiScoreValue').textContent = data.priority_rank ?? data.score;
+                document.getElementById('aiScoreRing').style.setProperty('--ai-score', data.priority_rank ?? data.score);
+                document.getElementById('aiCredibilityValue').textContent = data.credibility_score ?? '—';
+                document.getElementById('aiCredibilityRing').style.setProperty('--ai-score', data.credibility_score ?? 0);
+                var gravBadge = document.getElementById('aiGraviteBadge');
+                gravBadge.textContent = data.gravite.toUpperCase();
+                gravBadge.className = 'badge gravite-' + data.gravite;
+                document.getElementById('aiPriorityLabel').textContent = data.priority_label || '';
+                document.getElementById('aiSummaryText').textContent = data.summary;
+                document.getElementById('aiEtaText').textContent = data.can_submit
+                    ? 'Temps estimé : ~' + data.estimated_response_min + ' min'
+                    : 'Envoi bloqué — corrigez les alertes ci-dessus.';
+                var svcList = document.getElementById('aiServicesList');
+                svcList.innerHTML = '';
+                (data.services || []).forEach(function (s) {
+                    var span = document.createElement('span');
+                    span.className = 'badge bg-danger-subtle text-danger';
+                    span.textContent = s;
+                    svcList.appendChild(span);
+                });
+                applyVerdictUi(data);
+            })
+            .catch(function () {});
+        }, 600);
+    }
+
+    window.triggerAiAnalysis = triggerAnalysis;
+
+    if (reportDescription) {
+        reportDescription.addEventListener('input', triggerAnalysis);
+    }
+    ['firePeopleTrapped', 'fireSmokeLevel', 'fireBuildingType'].forEach(function (id) {
+        var el = document.getElementById(id);
+        if (el) el.addEventListener('change', triggerAnalysis);
+    });
+    if (reportPhoto) reportPhoto.addEventListener('change', triggerAnalysis);
+    if (reportVideo) reportVideo.addEventListener('change', triggerAnalysis);
 
 });

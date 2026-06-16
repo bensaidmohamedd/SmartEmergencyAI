@@ -32,7 +32,12 @@ class AuthController extends Controller
         if (Auth::attempt($credentials, $request->boolean('remember'))) {
             $request->session()->regenerate();
 
-            return redirect()->intended(route('home'));
+            $user = Auth::user();
+            $redirect = $user->isAdmin()
+                ? route('admin.dashboard')
+                : route('home');
+
+            return redirect()->intended($redirect);
         }
 
         return back()->withErrors([
@@ -68,6 +73,7 @@ class AuthController extends Controller
             'phone' => $validated['phone'],
             'email' => $validated['email'],
             'password' => Hash::make($validated['password']),
+            'role' => User::ROLE_CITOYEN,
         ]);
 
         Auth::login($user);

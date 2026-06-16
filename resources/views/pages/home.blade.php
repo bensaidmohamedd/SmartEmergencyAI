@@ -41,6 +41,10 @@
                             <i class="bi bi-exclamation-triangle-fill me-2"></i>
                             Signaler une urgence
                         </a>
+                        <a href="{{ route('impact') }}" class="btn btn-outline-primary btn-lg px-4">
+                            <i class="bi bi-graph-up me-2"></i>
+                            Rapport d'impact
+                        </a>
                     </div>
 
                     <div class="hero-trust mt-5 d-flex flex-wrap gap-4 justify-content-center justify-content-lg-start">

@@ -38,6 +38,14 @@
                 </div>
             </div>
 
+            <div class="mb-3 d-flex justify-content-between align-items-center">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="remember" id="remember">
+                    <label class="form-check-label" for="remember">Se souvenir de moi</label>
+                </div>
+                <a href="{{ route('password.request') }}" class="small">Mot de passe oublié ?</a>
+            </div>
+
             <button type="submit" class="btn btn-primary w-100 btn-lg mb-3">
                 <i class="bi bi-box-arrow-in-right me-2"></i> Connexion
             </button>

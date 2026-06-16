@@ -35,10 +35,47 @@
                                     id="reportCategory" name="category" required>
                                 <option value="" disabled {{ old('category') ? '' : 'selected' }}>Choisir une catégorie...</option>
                                 @foreach($categories as $cat)
-                                    <option value="{{ $cat }}" {{ old('category') === $cat ? 'selected' : '' }}>{{ $cat }}</option>
+                                    <option value="{{ $cat }}" {{ old('category', $prefillCategory ?? '') === $cat ? 'selected' : '' }}>{{ $cat }}</option>
                                 @endforeach
                             </select>
                             @error('category')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
+                        </div>
+
+                        {{-- Champs spécifiques INCENDIE --}}
+                        <div class="col-12 d-none" id="fireFields">
+                            <div class="fire-fields-card p-3 rounded-3">
+                                <h6 class="fw-semibold mb-3"><i class="bi bi-fire text-danger me-2"></i>Détails incendie</h6>
+                                <div class="row g-3">
+                                    <div class="col-md-4">
+                                        <label class="form-label small fw-semibold">Personnes piégées ?</label>
+                                        <select name="fire_people_trapped" class="form-select" id="firePeopleTrapped">
+                                            <option value="0">Non / Inconnu</option>
+                                            <option value="1">Oui — personnes bloquées</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label small fw-semibold">Niveau de fumée</label>
+                                        <select name="fire_smoke_level" class="form-select" id="fireSmokeLevel">
+                                            <option value="">Non précisé</option>
+                                            <option value="faible">Faible</option>
+                                            <option value="modere">Modéré</option>
+                                            <option value="dense">Dense / Visibilité nulle</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label small fw-semibold">Type de bâtiment</label>
+                                        <select name="fire_building_type" class="form-select" id="fireBuildingType">
+                                            <option value="">Non précisé</option>
+                                            <option value="habitation">Habitation</option>
+                                            <option value="commerce">Commerce / Marché</option>
+                                            <option value="ecole">École</option>
+                                            <option value="hopital">Hôpital</option>
+                                            <option value="industrie">Industrie / Entrepôt</option>
+                                            <option value="autre">Autre</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
                         {{-- Géolocalisation --}}
@@ -73,8 +110,13 @@
                             <label for="reportDescription" class="form-label fw-medium">Description</label>
                             <textarea class="form-control @error('description') is-invalid @enderror"
                                       id="reportDescription" name="description" rows="4"
-                                      placeholder="Décrivez la situation..." required>{{ old('description') }}</textarea>
+                                      placeholder="Décrivez la situation (feu, fumée, personnes bloquées...)" required>{{ old('description') }}</textarea>
                             @error('description')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
+                        </div>
+
+                        {{-- Analyse IA en temps réel --}}
+                        <div class="col-12 d-none" id="aiPreviewPanel">
+                            @include('partials.ai-preview-panel')
                         </div>
 
                         <div class="col-md-6">
@@ -115,3 +157,10 @@
     </div>
 
 @endsection
+
+@push('scripts')
+<script>
+    window.SEA_ANALYZE_URL = @json(route('signalement.analyze'));
+    window.SEA_CSRF = @json(csrf_token());
+</script>
+@endpush

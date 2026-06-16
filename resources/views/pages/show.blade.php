@@ -6,10 +6,30 @@
 
 @section('content')
 
-    <div class="mb-3">
+    <div class="mb-3 d-flex gap-2 flex-wrap">
         <a href="{{ route('history') }}" class="btn btn-sm btn-outline-primary">
             <i class="bi bi-arrow-left me-1"></i> Retour à l'historique
         </a>
+        <a href="{{ route('signalement.attestation', $signalement['id']) }}" target="_blank" class="btn btn-sm btn-outline-secondary">
+            <i class="bi bi-file-earmark-text me-1"></i> Attestation / Imprimer
+        </a>
+        <a href="{{ route('signalement.attestation.download', $signalement['id']) }}" class="btn btn-sm btn-outline-primary">
+            <i class="bi bi-download me-1"></i> Télécharger
+        </a>
+        @if($signalement['whatsapp_url'])
+            <a href="{{ $signalement['whatsapp_url'] }}" target="_blank" class="btn btn-sm btn-success">
+                <i class="bi bi-whatsapp me-1"></i> Partager position
+            </a>
+        @endif
+        @if($signalement['statut'] === 'en_cours')
+            <form action="{{ route('signalement.cancel', $signalement['id']) }}" method="POST"
+                  onsubmit="return confirm('Annuler ce signalement ?')">
+                @csrf
+                <button type="submit" class="btn btn-sm btn-outline-danger">
+                    <i class="bi bi-x-circle me-1"></i> Annuler le signalement
+                </button>
+            </form>
+        @endif
     </div>
 
     <div class="row g-4">
@@ -75,8 +95,52 @@
             </div>
         </div>
 
-        {{-- Timeline --}}
+        {{-- Timeline + IA --}}
         <div class="col-lg-5">
+            @if($signalement['ai_score'])
+                <div class="sea-card p-4 mb-4 ai-result-card">
+                    <h5 class="fw-semibold mb-3"><i class="bi bi-robot text-primary me-2"></i>Analyse IA</h5>
+                    <div class="d-flex align-items-center gap-3 mb-3">
+                        <div class="ai-score-ring ai-score-ring-sm"><span>{{ $signalement['ai_score'] }}</span></div>
+                        <div>
+                            <div class="fw-bold">{{ $signalement['priority_label'] }}</div>
+                            @include('partials.gravite-badge', ['gravite' => $signalement['gravite']])
+                        </div>
+                    </div>
+                    <p class="small mb-3">{{ $signalement['ai_summary'] }}</p>
+                    @if($signalement['ai_services'])
+                        <div class="d-flex flex-wrap gap-1 mb-2">
+                            @foreach($signalement['ai_services'] as $svc)
+                                <span class="badge bg-danger-subtle text-danger">{{ $svc }}</span>
+                            @endforeach
+                        </div>
+                    @endif
+                    @if($signalement['estimated_response_min'])
+                        <small class="text-muted"><i class="bi bi-clock me-1"></i> ETA : ~{{ $signalement['estimated_response_min'] }} min</small>
+                    @endif
+                    @if($signalement['assigned_service'])
+                        <div class="mt-2 small"><i class="bi bi-truck me-1"></i> Unité dispatchée : <strong>{{ $signalement['assigned_service'] }}</strong></div>
+                    @endif
+                </div>
+            @endif
+
+            @if(!empty($nearestServices))
+                <div class="sea-card p-4 mb-4">
+                    <h6 class="fw-semibold mb-3"><i class="bi bi-geo-alt me-2"></i>Services les plus proches</h6>
+                    @foreach($nearestServices as $item)
+                        <div class="d-flex justify-content-between align-items-center mb-2 pb-2 border-bottom">
+                            <div>
+                                <div class="fw-semibold small">{{ $item['service']->name }}</div>
+                                <small class="text-muted">{{ $item['service']->typeLabel() }} — {{ $item['distance_km'] }} km</small>
+                            </div>
+                            <a href="tel:{{ $item['service']->phone }}" class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-telephone"></i> {{ $item['service']->phone }}
+                            </a>
+                        </div>
+                    @endforeach
+                </div>
+            @endif
+
             <div class="sea-card p-4">
                 <h5 class="fw-semibold mb-4">
                     <i class="bi bi-clock-history text-primary me-2"></i>

@@ -46,6 +46,11 @@
                         <a href="{{ route('dashboard') }}" class="btn btn-outline-primary btn-sm">
                             <i class="bi bi-grid me-1"></i> Mon espace
                         </a>
+                        @if(auth()->user()->isAdmin())
+                            <a href="{{ route('admin.dashboard') }}" class="btn btn-admin-accent btn-sm">
+                                <i class="bi bi-shield-check me-1"></i> Admin
+                            </a>
+                        @endif
                     @endauth
 
                     <a href="{{ route('report') }}" class="btn btn-primary btn-sm">
@@ -70,7 +75,7 @@
 
 @else
 
-    <header class="app-navbar">
+    <header class="app-navbar {{ ($variant ?? '') === 'admin' ? 'admin-navbar' : '' }}">
         <div class="d-flex align-items-center gap-3">
             <button class="btn btn-link p-0 d-lg-none theme-icon-btn" id="sidebarToggle" aria-label="Menu">
                 <i class="bi bi-list fs-4"></i>
@@ -83,18 +88,44 @@
 
         <div class="d-flex align-items-center gap-2">
             @include('partials.theme-toggle')
-            <a href="{{ route('report') }}" class="btn btn-primary btn-sm d-none d-md-inline-flex">
-                <i class="bi bi-plus-circle me-1"></i> Signaler
-            </a>
+            @if(($variant ?? '') === 'admin')
+                <a href="{{ route('admin.signalements.index') }}" class="btn btn-admin-accent btn-sm d-none d-md-inline-flex">
+                    <i class="bi bi-list-ul me-1"></i> Signalements
+                </a>
+            @else
+                <a href="{{ route('notifications.index') }}" class="btn btn-light btn-sm position-relative" title="Notifications">
+                    <i class="bi bi-bell"></i>
+                    @auth
+                        @if(auth()->user()->unreadNotifications->count() > 0)
+                            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size:0.6rem;">
+                                {{ auth()->user()->unreadNotifications->count() }}
+                            </span>
+                        @endif
+                    @endauth
+                </a>
+                <a href="{{ route('report') }}" class="btn btn-primary btn-sm d-none d-md-inline-flex">
+                    <i class="bi bi-plus-circle me-1"></i> Signaler
+                </a>
+            @endif
             <div class="dropdown">
                 <button class="btn btn-light btn-sm dropdown-toggle d-flex align-items-center gap-2"
                         data-bs-toggle="dropdown">
                     <img src="{{ $user['avatar'] ?? '' }}" alt="" class="navbar-avatar">
-                    <span class="d-none d-md-inline">{{ $user['name'] ?? 'Citoyen' }}</span>
+                    <span class="d-none d-md-inline">{{ $user['name'] ?? 'Utilisateur' }}</span>
                 </button>
                 <ul class="dropdown-menu dropdown-menu-end shadow border-0">
-                    <li><a class="dropdown-item" href="{{ route('dashboard') }}"><i class="bi bi-grid me-2"></i> Dashboard</a></li>
-                    <li><a class="dropdown-item" href="{{ route('history') }}"><i class="bi bi-clock-history me-2"></i> Historique</a></li>
+                    @if(($variant ?? '') === 'admin')
+                        <li><a class="dropdown-item" href="{{ route('admin.dashboard') }}"><i class="bi bi-speedometer2 me-2"></i> Admin</a></li>
+                        <li><a class="dropdown-item" href="{{ route('dashboard') }}"><i class="bi bi-grid me-2"></i> Espace citoyen</a></li>
+                    @else
+                        <li><a class="dropdown-item" href="{{ route('dashboard') }}"><i class="bi bi-grid me-2"></i> Dashboard</a></li>
+                        <li><a class="dropdown-item" href="{{ route('history') }}"><i class="bi bi-clock-history me-2"></i> Historique</a></li>
+                        @auth
+                            @if(auth()->user()->isAdmin())
+                                <li><a class="dropdown-item" href="{{ route('admin.dashboard') }}"><i class="bi bi-shield-check me-2"></i> Administration</a></li>
+                            @endif
+                        @endauth
+                    @endif
                     <li><hr class="dropdown-divider"></li>
                     <li>
                         <form action="{{ route('logout') }}" method="POST">

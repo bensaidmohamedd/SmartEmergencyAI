@@ -60,16 +60,36 @@
     <div class="row g-4">
         {{-- Actions rapides --}}
         <div class="col-lg-4">
-            <div class="sea-card p-4">
+            <div class="sea-card p-4 mb-4">
                 <h5 class="fw-semibold mb-3">Actions rapides</h5>
                 <div class="d-grid gap-2">
-                    <a href="{{ route('report') }}" class="btn btn-primary">
-                        <i class="bi bi-exclamation-triangle-fill me-2"></i> Signaler une urgence
+                    <a href="{{ route('report.quick') }}" class="btn btn-danger">
+                        <i class="bi bi-lightning-charge-fill me-2"></i> Urgence rapide
                     </a>
-                    <a href="{{ route('history') }}" class="btn btn-outline-primary">
+                    <a href="{{ route('report') }}" class="btn btn-primary">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i> Signalement complet
+                    </a>
+                    <a href="{{ route('services.index') }}" class="btn btn-outline-primary">
+                        <i class="bi bi-telephone-fill me-2"></i> Annuaire secours
+                    </a>
+                    <a href="{{ route('history') }}" class="btn btn-outline-secondary">
                         <i class="bi bi-clock-history me-2"></i> Voir l'historique
                     </a>
                 </div>
+            </div>
+
+            <div class="sea-card p-4">
+                <h6 class="fw-semibold mb-3"><i class="bi bi-building me-2"></i>Secours à Niamey</h6>
+                @foreach($emergencyServices as $svc)
+                    <div class="d-flex justify-content-between align-items-center mb-2 pb-2 border-bottom">
+                        <div class="small">
+                            <div class="fw-semibold">{{ $svc->name }}</div>
+                            <span class="text-muted">{{ $svc->typeLabel() }}</span>
+                        </div>
+                        <a href="tel:{{ $svc->phone }}" class="btn btn-sm btn-outline-primary">{{ $svc->phone }}</a>
+                    </div>
+                @endforeach
+                <a href="{{ route('services.index') }}" class="small">Voir tout l'annuaire →</a>
             </div>
         </div>
 

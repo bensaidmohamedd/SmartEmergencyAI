@@ -21,8 +21,18 @@
                 </a>
             </li>
             <li class="nav-item">
-                <a class="nav-link {{ request()->routeIs('report') ? 'active' : '' }}" href="{{ route('report') }}">
+                <a class="nav-link {{ request()->routeIs('report*') ? 'active' : '' }}" href="{{ route('report') }}">
                     <i class="bi bi-exclamation-triangle-fill"></i> Signaler une urgence
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {{ request()->routeIs('report.quick') ? 'active' : '' }}" href="{{ route('report.quick') }}">
+                    <i class="bi bi-lightning-charge-fill"></i> Urgence rapide
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {{ request()->routeIs('services.*') ? 'active' : '' }}" href="{{ route('services.index') }}">
+                    <i class="bi bi-telephone-fill"></i> Annuaire secours
                 </a>
             </li>
             <li class="nav-item">
@@ -30,12 +40,31 @@
                     <i class="bi bi-clock-history"></i> Historique
                 </a>
             </li>
+            <li class="nav-item">
+                <a class="nav-link {{ request()->routeIs('notifications.*') ? 'active' : '' }}" href="{{ route('notifications.index') }}">
+                    <i class="bi bi-bell-fill"></i> Notifications
+                    @php $unread = auth()->user()->unreadNotifications->count(); @endphp
+                    @if($unread > 0)<span class="badge bg-danger ms-1">{{ $unread }}</span>@endif
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {{ request()->routeIs('profile') ? 'active' : '' }}" href="{{ route('profile') }}">
+                    <i class="bi bi-person-fill"></i> Mon profil
+                </a>
+            </li>
         </ul>
 
         <div class="px-3 mt-4">
-            <a href="{{ route('report') }}" class="btn btn-primary w-100">
+            <a href="{{ route('report.quick') }}" class="btn btn-danger w-100">
                 <i class="bi bi-lightning-charge-fill me-1"></i> Urgence rapide
             </a>
+            @auth
+                @if(auth()->user()->isAdmin())
+                    <a href="{{ route('admin.dashboard') }}" class="btn btn-admin-accent w-100 mt-2">
+                        <i class="bi bi-shield-check me-1"></i> Administration
+                    </a>
+                @endif
+            @endauth
         </div>
     </nav>
 

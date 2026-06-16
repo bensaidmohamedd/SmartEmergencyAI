@@ -3,9 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Models\Category;
+use App\Models\EmergencyService;
 use App\Models\PlatformStat;
 use App\Models\Signalement;
 use App\Models\User;
+use App\Services\NearestServiceFinder;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class PageController extends Controller
@@ -79,10 +82,12 @@ class PageController extends Controller
             'user' => $user->toViewArray(),
             'stats' => $this->dashboardStats($user),
             'recent' => $recent,
+            'emergencyServices' => EmergencyService::orderBy('type')->limit(4)->get(),
+            'categories' => Category::orderBy('name')->pluck('name'),
         ]);
     }
 
-    public function report()
+    public function report(Request $request)
     {
         $user = $this->currentUser();
 
@@ -90,36 +95,116 @@ class PageController extends Controller
             'layout' => 'app',
             'user' => $user->toViewArray(),
             'categories' => Category::orderBy('name')->pluck('name'),
+            'prefillCategory' => $request->query('category'),
         ]);
     }
 
-    public function history()
+    public function quickReport(Request $request)
     {
         $user = $this->currentUser();
-        $signalements = $this->signalementsQuery()
-            ->where('user_id', $user->id)
-            ->get()
-            ->map->toViewArray();
+
+        return view('pages.quick-report', [
+            'layout' => 'app',
+            'user' => $user->toViewArray(),
+            'categories' => Category::orderBy('name')->pluck('name'),
+            'prefillCategory' => $request->query('category'),
+        ]);
+    }
+
+    public function services(Request $request)
+    {
+        $query = EmergencyService::query()->orderBy('type')->orderBy('name');
+
+        if ($request->filled('type') && $request->type !== 'all') {
+            $query->where('type', $request->type);
+        }
+
+        if ($search = $request->input('q')) {
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                    ->orWhere('zone', 'like', "%{$search}%")
+                    ->orWhere('address', 'like', "%{$search}%");
+            });
+        }
+
+        return view('pages.services', [
+            'layout' => 'app',
+            'user' => $this->currentUser()->toViewArray(),
+            'services' => $query->get(),
+            'filters' => $request->only(['type', 'q']),
+        ]);
+    }
+
+    public function history(Request $request)
+    {
+        $user = $this->currentUser();
+        $query = $this->signalementsQuery()->where('user_id', $user->id);
+
+        if ($request->filled('gravite') && $request->gravite !== 'all') {
+            $query->where('gravite', $request->gravite);
+        }
+        if ($request->filled('statut') && $request->statut !== 'all') {
+            $query->where('statut', $request->statut);
+        }
+        if ($search = $request->input('q')) {
+            $query->where(function ($q) use ($search) {
+                $q->where('reference', 'like', "%{$search}%")
+                    ->orWhere('localisation', 'like', "%{$search}%")
+                    ->orWhere('description', 'like', "%{$search}%");
+            });
+        }
+
+        $signalements = $query->paginate(9)->withQueryString();
 
         return view('pages.history', [
             'layout' => 'app',
             'user' => $user->toViewArray(),
             'signalements' => $signalements,
+            'filters' => $request->only(['q', 'gravite', 'statut']),
+        ]);
+    }
+
+    public function impact()
+    {
+        $stats = [
+            'total' => Signalement::count(),
+            'incendies' => Signalement::whereHas('category', fn ($q) => $q->where('name', 'Incendie'))->count(),
+            'critiques' => Signalement::where('gravite', 'critique')->count(),
+            'termines' => Signalement::where('statut', 'termine')->count(),
+            'avg_score' => (int) Signalement::whereNotNull('ai_score')->avg('ai_score'),
+            'avg_response' => (int) Signalement::whereNotNull('estimated_response_min')->avg('estimated_response_min'),
+            'services' => EmergencyService::count(),
+        ];
+
+        return view('pages.impact', [
+            'layout' => 'guest',
+            'stats' => $stats,
+            'platformStats' => PlatformStat::pluck('value', 'key'),
+            'recentIncendies' => Signalement::with('category')
+                ->whereHas('category', fn ($q) => $q->where('name', 'Incendie'))
+                ->orderByDesc('reported_at')
+                ->limit(5)
+                ->get(),
         ]);
     }
 
     public function show(string $id)
     {
         $user = $this->currentUser();
-        $signalement = Signalement::with(['category', 'timelineSteps'])
+        $signalement = Signalement::with(['category', 'timelineSteps', 'assignedService'])
             ->where('reference', $id)
             ->where('user_id', $user->id)
             ->firstOrFail();
+
+        $nearestServices = ($signalement->latitude && $signalement->longitude)
+            ? NearestServiceFinder::find($signalement->latitude, $signalement->longitude, null, 3)
+            : [];
 
         return view('pages.show', [
             'layout' => 'app',
             'user' => $user->toViewArray(),
             'signalement' => $signalement->toViewArray(),
+            'nearestServices' => $nearestServices,
         ]);
     }
 }
